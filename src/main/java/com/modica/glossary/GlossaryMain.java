@@ -31,7 +31,7 @@ public final class GlossaryMain {
     myGlossary.setTermColor("#FF0000");
     myGlossary.setBackgroundImage("OhioState.png");
     myGlossary.setNestedTermsMode(true);
-    myGlossary.setAlphabeticalOrderMode(true);
+    myGlossary.sortAlphabetically(true);
 
     out.println("Please enter the location of your glossary text file: ");
 

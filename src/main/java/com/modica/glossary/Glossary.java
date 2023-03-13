@@ -1,5 +1,7 @@
 package com.modica.glossary;
 
+import java.io.IOException;
+
 /**
  * {@link Glossary} enhanced with secondary methods.
  *
@@ -18,7 +20,7 @@ public interface Glossary extends GlossaryKernel {
    * @replaces this
    * @requires fileName is a valid file location
    */
-  void readText(String fileName);
+  void readText(String fileName) throws IOException;
 
   /**
    * Outputs a well formatted HTML index page containing each term in
@@ -29,6 +31,6 @@ public interface Glossary extends GlossaryKernel {
    *            The name of the folder to store the HTML files in
    * @requires folderName is a valid folder location
    */
-  void outputHTML(String folderName);
+  void outputHTML(String folderName) throws IOException;
 
 }

@@ -1,6 +1,9 @@
 package com.modica.glossary;
 
+import java.io.*;
 import java.util.*;
+import java.util.function.*;
+import java.io.IOException;
 
 /**
  * {@code Glossary} represented as a {@link Map}.
@@ -35,17 +38,13 @@ public final class Glossary1 implements Glossary {
    */
   private String title;
 
+  private boolean sortAlphabetically;
+
   /**
    * Boolean determining whether the definition page will link terms
    * that appear in a definition to that term's HTML definition page.
    */
   private boolean isInNestedTermsMode;
-
-  /**
-   * Boolean determining whether the index page will display terms in
-   * alphabetical order.
-   */
-  private boolean isInAlphabeticalOrderingMode;
 
   /**
    * Location of the background image for the HTML index page.
@@ -61,8 +60,8 @@ public final class Glossary1 implements Glossary {
     this.title = "Glossary";
     this.termColor = "green";
     this.backgroundImage = "";
+    this.sortAlphabetically = false;
     this.isInNestedTermsMode = false;
-    this.isInAlphabeticalOrderingMode = false;
   }
 
   /*
@@ -143,14 +142,8 @@ public final class Glossary1 implements Glossary {
     return this.isInNestedTermsMode;
   }
 
-  @Override
-  public void setAlphabeticalOrderMode(boolean isAlphabetical) {
-    this.isInAlphabeticalOrderingMode = isAlphabetical;
-  }
-
-  @Override
-  public boolean isInAlphabeticalOrderMode() {
-    return this.isInAlphabeticalOrderingMode;
+  public void sortAlphabetically(boolean bool) {
+    this.sortAlphabetically = bool;
   }
 
   @Override
@@ -167,100 +160,50 @@ public final class Glossary1 implements Glossary {
 
   //TODO: Learn Java file reading
   @Override
-  public void readText(String fileName) {
+  public void readText(String fileName) throws IOException {
     this.rep.clear();
-    SimpleReader in = new SimpleReader1L(fileName);
 
-    while (!in.atEOS()) {
-      String term = in.nextLine();
+    File inputFile = new File(fileName);
+    Scanner inputReader = new Scanner(inputFile);
 
-      StringBuilder defBuilder = new StringBuilder();
-      String nextLine = in.nextLine();
-      while (!nextLine.isEmpty()) {
-        defBuilder.append(nextLine);
-        nextLine = in.nextLine();
-      }
+    while (inputReader.hasNext()) {
+      String term = inputReader.nextLine();
 
-      this.addEntry(term, defBuilder.toString());
+      this.rep.entrySet()
+              .add(new AbstractMap.SimpleEntry<>(term, GlossaryUtilities.readDefinition(inputReader)));
     }
-
-    in.close();
   }
 
-  // TODO: Learn to write to files, Create outputHtmlSorted method???
   @Override
-  public void outputHTML(String folderName) {
-    SimpleWriter indexOut = new SimpleWriter1L(
-        folderName + "/" + "index.html");
-    SimpleWriter defOut = new SimpleWriter1L();
+  public void outputHTML(String folderName) throws IOException {
+
     List<String> termList = this.rep.keySet().stream().toList();
-    /*
-     * Create a set of characters that are considered separators
-     */
-    List<Character> separators = Arrays.asList('\t', '\n', '\r', '.', ',', '?',
-        '!', ' ', ':', ';', '"', '-', '[', ']', '(', ')', '/', '\'');
 
-    GlossaryUtilities.outputIndexHeader(indexOut, this.title, this.backgroundImage);
+    File indexFile = new File("resources/index.html");
+    FileWriter indexWriter = new FileWriter(folderName);
 
-    while (termQ.length() > 0) {
-      String term = termQ.dequeue();
-      String definition = this.rep.value(term);
-
-      indexOut.println(
-          "<li><a href=\"" + term + ".html\">" + term + "</a></li>");
-
-      /*
-       * Print each definition into an HTML file named after the
-       * corresponding term
-       */
-      defOut = new SimpleWriter1L(folderName + "/" + term + ".html");
-
-      GlossaryUtilities.outputDefHeader(defOut, term,
-          this.backgroundImage);
-
-      /*
-       * Set the term text color to the color specified by this.termColor
-       * and print the term as an HTML heading
-       */
-      defOut.print("<h2><b><i><font color=\"" + this.termColor + "\">");
-      defOut.print(term);
-      defOut.println("</font></i></b></h2>");
-
-      /*
-       * If the glossary is in nested terms mode, print the definition
-       * word-by-word, checking if each word is a term in the glossary. If
-       * it is a term, link the word to that term's HTML page. Otherwise,
-       * just print the definition with no linking.
-       */
-      if (this.isInNestedTermsMode) {
-        defOut.print("<blockquote>");
-        int position = 0;
-        while (position < definition.length()) {
-          String nextWordOrSeparator = GlossaryUtilities
-              .nextWordOrSeparator(definition, position,
-                  separators);
-
-          if (this.rep.hasKey(nextWordOrSeparator)) {
-            defOut.print("<a href=\"" + nextWordOrSeparator
-                + ".html\">" + nextWordOrSeparator + "</a>");
-          } else {
-            defOut.print(nextWordOrSeparator);
-          }
-
-          position += nextWordOrSeparator.length();
-        }
-        defOut.println("</blockquote>");
-      } else {
-        defOut.println("<blockquote>" + definition + "</blockquote>");
-      }
-
-      GlossaryUtilities.outputDefFooter(defOut);
+    GlossaryUtilities.writeIndexHeader(indexWriter, this.title, this.backgroundImage);
+    if(this.sortAlphabetically) {
+      GlossaryUtilities.writeIndexBodySorted(indexWriter, termList);
+    } else {
+      GlossaryUtilities.writeIndexBody(indexWriter, termList);
     }
-    this.rep.clear();
-    GlossaryUtilities.outputIndexFooter(indexOut);
+    GlossaryUtilities.writeIndexFooter(indexWriter);
 
-    indexOut.close();
-    defOut.close();
+    for (String term : termList) {
+      File definitionFile = new File("/resources/" + term);
+      FileWriter definitionWriter = new FileWriter("/resources/" + term);
+      String definition = this.rep.get(term);
+
+      GlossaryUtilities.writeDefinitionHeader(definitionWriter, term,
+          this.backgroundImage, this.termColor);
+      if (this.isInNestedTermsMode) {
+        GlossaryUtilities.writeDefinitionBodyNested(definitionWriter, definition, termList);
+      } else {
+        definitionWriter.write("<blockquote>" + definition + "</blockquote>");
+      }
+      GlossaryUtilities.writeDefinitionFooter(definitionWriter);
+    }
   }
 
   public void clear() {
@@ -289,14 +232,7 @@ public final class Glossary1 implements Glossary {
 
   @Override
   public String toString() {
-    StringBuilder stringRep = new StringBuilder();
-
-    for (Map.Pair<String, String> pair : this.rep) {
-      stringRep.append(pair.key() + " - \n" + pair.value() + "\n\n");
-
-    }
-
-    return stringRep.toString();
+    return this.rep.entrySet().stream().toList().toString();
   }
 
   @Override
@@ -321,21 +257,12 @@ public final class Glossary1 implements Glossary {
      * equal. If the definitions of those terms do not match, they are
      * not equal. Size is equal, so the inverse does not need to be checked.
      */
-    for (Map.Pair<String, String> pair : this.rep) {
-      String pairTerm = pair.key();
-      if (g.hasTerm(pair.key())) {
-        if (!g.getDefinition(pairTerm).equals(pair.value())) {
-          return false;
-        }
-      } else {
-        return false;
-      }
-    }
+
+    return this.toString().equals(g.toString());
     /*
      * Objects are not null, are both instances of Glossary, and contain the
      * same (term, definition) pairs
      */
-    return true;
   }
 
   @Override

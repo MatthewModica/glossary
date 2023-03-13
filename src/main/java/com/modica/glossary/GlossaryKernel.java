@@ -1,14 +1,12 @@
 package com.modica.glossary;
 
-import components.standard.Standard;
-
 /**
  * Glossary kernel component with primary methods.
  *
  * @author Matthew Modica
  *
  */
-public interface GlossaryKernel extends Standard<Glossary> {
+public interface GlossaryKernel {
 
   /**
    * Adds the pair (term, definition) to this Glossary.
@@ -47,16 +45,6 @@ public interface GlossaryKernel extends Standard<Glossary> {
    * @return the definition associated with the given term
    */
   String getDefinition(String term);
-
-  /**
-   * Returns the term associated with {@code definition}.
-   *
-   * @param definition
-   *            the definition associated with the desired term
-   * @return the term associated with the given definition
-   * @requires {@code definition} is in RANGE(this)
-   */
-  String getTerm(String definition);
 
   /**
    * Reports the size of {@code this}.
@@ -120,25 +108,6 @@ public interface GlossaryKernel extends Standard<Glossary> {
    * @return The value determining whether nested terms mode is on or off
    */
   boolean isInNestedTermsMode();
-
-  /**
-   * Changes the mode of {@code this} to alphabetical order mode if
-   * isAlphabetical == true. HTML index pages generated from Glossary will be
-   * listed in lexicographic ordering.
-   *
-   * @param isAlphabetical
-   *            value determining whether alphabetical order mode is on or off
-   * @updates this
-   */
-  void setAlphabeticalOrderMode(boolean isAlphabetical);
-
-  /**
-   * Reports whether or not {@code this} is in alphabetical order mode.
-   *
-   * @return The value determining whether alphabetical order mode is on or
-   *         off
-   */
-  boolean isInAlphabeticalOrderMode();
 
   /**
    * Sets the background image for the HTML index and definition pages.

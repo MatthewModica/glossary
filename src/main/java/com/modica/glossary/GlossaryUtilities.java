@@ -1,11 +1,10 @@
 package com.modica.glossary;
 
-import components.map.Map;
-import components.queue.Queue;
-import components.queue.Queue2;
-import components.set.Set;
-import components.simplewriter.SimpleWriter;
-import java.util.Comparator;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * A utility class with useful methods for {@link Glossary}.
@@ -15,6 +14,23 @@ import java.util.Comparator;
  *
  */
 public final class GlossaryUtilities {
+
+  @FunctionalInterface
+  public interface ThrowingConsumer<T, E extends Exception> {
+    void accept(T t) throws E;
+  }
+
+  static <T> Consumer<T> throwingConsumerWrapper(
+      ThrowingConsumer<T, Exception> throwingConsumer) {
+
+    return i -> {
+      try {
+        throwingConsumer.accept(i);
+      } catch (Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    };
+  }
 
   /**
    * Comparator for comparing strings by lexicographic ordering.
@@ -37,94 +53,110 @@ public final class GlossaryUtilities {
   /**
    * Output an HTML header for the index page.
    *
-   * @param out
+   * @param indexWriter
    *            The output stream
    * @param glossaryTitle
    *            The title of the HTML index page
    * @param backgroundImage
    *            The background image location for the HTML index page
    */
-  public static void outputIndexHeader(SimpleWriter out, String glossaryTitle,
-      String backgroundImage) {
-    out.println("<html>");
-    out.println("<head>");
-    out.println("<title>" + glossaryTitle + "</title>");
-    out.println("</head>");
-    out.println("<body background=\"" + backgroundImage + "\">");
-    out.println("<h2>" + glossaryTitle + "</h2>");
-    out.println("<hr />");
-    out.println("<h3>Index</h3>");
-    out.println("<ul>");
+  public static void writeIndexHeader(FileWriter indexWriter, String glossaryTitle,
+      String backgroundImage) throws IOException {
+
+    indexWriter.write("<html>");
+    indexWriter.write("<head>");
+    indexWriter.write("<title>" + glossaryTitle + "</title>");
+    indexWriter.write("</head>");
+    indexWriter.write("<body background=\"" + backgroundImage + "\">");
+    indexWriter.write("<h2>" + glossaryTitle + "</h2>");
+    indexWriter.write("<hr />");
+    indexWriter.write("<h3>Index</h3>");
+    indexWriter.write("<ul>");
+  }
+
+  public static void writeIndexBody(FileWriter indexWriter, List<String> termList)
+      throws IOException {
+    termList.forEach(throwingConsumerWrapper(term ->
+        indexWriter.write("<li><a href=\"" + term + ".html\">" + term + "</a></li>")));
+  }
+
+  public static void writeIndexBodySorted(FileWriter indexWriter, List<String> termList)
+      throws IOException {
+    termList.stream()
+            .sorted(String::compareToIgnoreCase)
+            .forEach(throwingConsumerWrapper(term ->
+                indexWriter.write("<li><a href=\"" + term + ".html\">" + term + "</a></li>")));
+
   }
 
   /**
    * Output an HTML footer for the index page.
    *
-   * @param out
+   * @param indexWriter
    *            The output stream
    */
-  public static void outputIndexFooter(SimpleWriter out) {
-    out.println("</ul>");
-    out.println("</body>");
-    out.println("</html>");
+  public static void writeIndexFooter(FileWriter indexWriter) throws IOException {
+    indexWriter.write("</ul>");
+    indexWriter.write("</body>");
+    indexWriter.write("</html>");
+    indexWriter.close();
   }
 
   /**
    * Output an HTML header for a definition page.
    *
-   * @param out
+   *
    *            The output stream
    * @param term
    *            The corresponding term for the definition being printed
    * @param backgroundImage
    *            The background image location for the HTML definition pages
    */
-  public static void outputDefHeader(SimpleWriter out, String term,
-      String backgroundImage) {
-    out.println("<html>");
-    out.println("<head>");
-    out.println("<title>" + term + "</title>");
-    out.println("</head>");
-    out.println("<body background=\"" + backgroundImage + "\">");
+  public static void writeDefinitionHeader(FileWriter definitionWriter, String term,
+      String backgroundImage, String termColor) throws IOException {
+    definitionWriter.write("<html>");
+    definitionWriter.write("<head>");
+    definitionWriter.write("<title>" + term + "</title>");
+    definitionWriter.write("</head>");
+    definitionWriter.write("<body background=\"" + backgroundImage + "\">");
+    definitionWriter.write("<h2><b><i><font color=\"" + termColor + "\">");
+    definitionWriter.write(term);
+    definitionWriter.write("</font></i></b></h2>");
+  }
+
+  public static void writeDefinitionBodyNested(FileWriter definitionWriter,
+      String definition, List<String> termList) throws IOException {
+    final List<Character> separatorList = Arrays.asList('\t', '\n', '\r', '.', ',', '?',
+        '!', ' ', ':', ';', '"', '-', '[', ']', '(', ')', '/', '\'');
+
+    definitionWriter.write("<definition>");
+
+    int position = 0;
+    while (position < definition.length()) {
+      String nextWordOrSeparator = nextWordOrSeparator(definition, position, separatorList);
+      if (termList.contains(nextWordOrSeparator)) {
+        definitionWriter.write("<a href=\"" + nextWordOrSeparator + ".html\">" + nextWordOrSeparator + "</a>");
+      } else {
+        definitionWriter.write(nextWordOrSeparator);
+      }
+      position += nextWordOrSeparator.length();
+    }
+
+    definitionWriter.write("</blockquote>");
   }
 
   /**
    * Output an HTML footer for a definition page.
    *
-   * @param out
+   *
    *            The output stream
    */
-  public static void outputDefFooter(SimpleWriter out) {
-    out.println("<hr />");
-    out.println("<p>Return to <a href=\"index.html\">index</a>.</p>");
-    out.println("</body>");
-    out.println("</html>");
-  }
-
-  /**
-   * Generate a queue of the keys in {@code map}. If sortAlphabetically ==
-   * true, sort the queue using lexicographic ordering.
-   *
-   * @param map
-   *            The map containing the keys to be enqueued
-   * @param sortAlphabetically
-   *            Whether to sort the queue alphabetically
-   * @return a queue containing the keys from {@code map}
-   */
-  public static Queue<String> generateTermQueue(Map<String, String> map,
-      boolean sortAlphabetically) {
-    Queue<String> q = new Queue2<>();
-    Comparator<String> cs = new StringLT();
-
-    for (Map.Pair<String, String> pair : map) {
-      q.enqueue(pair.key());
-    }
-
-    if (sortAlphabetically) {
-      q.sort(cs);
-    }
-
-    return q;
+  public static void writeDefinitionFooter(FileWriter definitionWriter) throws IOException {
+    definitionWriter.write("<hr />");
+    definitionWriter.write("<p>Return to <a href=\"index.html\">index</a>.</p>");
+    definitionWriter.write("</body>");
+    definitionWriter.write("</html>");
+    definitionWriter.close();
   }
 
   /**
@@ -144,7 +176,7 @@ public final class GlossaryUtilities {
    *         at index {@code position}
    */
   public static String nextWordOrSeparator(String definition, int position,
-      Set<Character> separators) {
+      List<Character> separators) {
     StringBuilder nextWordOrSeparator = new StringBuilder();
     int currentPos = position;
     char frontChar = definition.charAt(currentPos);
@@ -168,5 +200,15 @@ public final class GlossaryUtilities {
     return nextWordOrSeparator.toString();
   }
 
+  public static String readDefinition(Scanner reader) {
+    StringBuilder definition = new StringBuilder();
+
+    String nextLine;
+    while (!((nextLine = reader.nextLine()).isEmpty())) {
+      definition.append(nextLine);
+    }
+
+    return definition.toString();
+  }
 }
 
