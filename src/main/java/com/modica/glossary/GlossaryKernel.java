@@ -91,6 +91,8 @@ public interface GlossaryKernel {
    */
   String getTitle();
 
+  void setSortAlphabetically(boolean bool);
+
   /**
    * Changes the mode of {@code this} to nested terms mode if
    * {@code nestedTerms} == true. Nested terms mode will link terms that

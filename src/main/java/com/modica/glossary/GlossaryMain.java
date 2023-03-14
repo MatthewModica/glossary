@@ -1,9 +1,8 @@
 package com.modica.glossary;
 
-import components.simplereader.SimpleReader;
-import components.simplereader.SimpleReader1L;
-import components.simplewriter.SimpleWriter;
-import components.simplewriter.SimpleWriter1L;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 /**
  * Class for creating a Glossary and outputting the HTML representation of the
@@ -20,8 +19,7 @@ public final class GlossaryMain {
    *            the command line arguments; unused here
    */
   public static void main(String[] args) {
-    final SimpleWriter out = new SimpleWriter1L();
-    final SimpleReader in = new SimpleReader1L();
+    BufferedReader terminalReader = new BufferedReader(new InputStreamReader(System.in));
     final Glossary myGlossary = new Glossary1();
 
     /*
@@ -31,21 +29,38 @@ public final class GlossaryMain {
     myGlossary.setTermColor("#FF0000");
     myGlossary.setBackgroundImage("OhioState.png");
     myGlossary.setNestedTermsMode(true);
-    myGlossary.sortAlphabetically(true);
+    myGlossary.setSortAlphabetically(true);
 
-    out.println("Please enter the location of your glossary text file: ");
+    System.out.println("Please enter the location of your glossary text file: ");
 
-    myGlossary.readText(in.nextLine());
+    try {
+      myGlossary.readText(terminalReader.readLine());
+    } catch (IOException e) {
+      System.out.println("There was an error reading the location of the text file.");
+      System.exit(0);
+    }
+
 
     myGlossary.addEntry("english",
         "the language of England, widely used throughout the world");
 
-    out.println("Please enter the name of your output folder: ");
-    myGlossary.outputHTML(in.nextLine());
+    System.out.println("Please enter the name of your output folder: ");
+
+    try {
+      myGlossary.outputHTML(terminalReader.readLine());
+    } catch (IOException e) {
+      System.out.println("There was an error while printing the HTML file.");
+      e.printStackTrace();
+      System.exit(0);
+    }
+
 
     myGlossary.size();
-
-    in.close();
-    out.close();
+    try {
+      terminalReader.close();
+    } catch (IOException e) {
+      System.out.println("There was an error while closing the terminalReader.");
+      e.printStackTrace();
+    }
   }
 }
