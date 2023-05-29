@@ -142,7 +142,7 @@ public final class Glossary1 implements Glossary {
     return this.isInNestedTermsMode;
   }
 
-  public void sortAlphabetically(boolean bool) {
+  public void setSortAlphabetically(boolean bool) {
     this.sortAlphabetically = bool;
   }
 
@@ -179,7 +179,6 @@ public final class Glossary1 implements Glossary {
 
     List<String> termList = this.rep.keySet().stream().toList();
 
-    File indexFile = new File("resources/index.html");
     FileWriter indexWriter = new FileWriter(folderName);
 
     GlossaryUtilities.writeIndexHeader(indexWriter, this.title, this.backgroundImage);
@@ -191,7 +190,6 @@ public final class Glossary1 implements Glossary {
     GlossaryUtilities.writeIndexFooter(indexWriter);
 
     for (String term : termList) {
-      File definitionFile = new File("/resources/" + term);
       FileWriter definitionWriter = new FileWriter("/resources/" + term);
       String definition = this.rep.get(term);
 
